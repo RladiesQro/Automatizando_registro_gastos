@@ -1,0 +1,191 @@
+---
+title: "Automatizando mis gastos en R"
+author: "Karen Nuñez"
+date: "2024-12-04"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Introducción a R
+
+Comentarios y operaciones básicas
+
+```{r}
+# Esto es un comentario en R. Sirve para explicar el código.
+
+# Operaciones matemáticas básicas
+2 + 2     # Suma
+5 * 3     # Multiplicación
+10 / 2    # División
+
+```
+
+Asignación de variables
+```{r}
+# Asignar un valor a una variable
+saldo_inicial <- 1000  # Usamos <- para asignar valores
+
+# Imprimir el valor de una variable
+print(saldo_inicial)
+
+```
+
+### Introducción al Todyverse
+El tidyverse es una colección de paquetes que facilita la manipulación y visualización de datos en R. Los principales paquetes que usaremos son:
+
+dplyr: Manipulación de datos.
+ggplot2: Visualización de datos.
+Primero, instalamos y cargamos el paquete:
+
+```{r}
+# Instalar tidyverse (si no está instalado)
+#install.packages("tidyverse")
+
+# Cargar el paquete
+library(tidyverse)
+
+```
+
+#### Manipulación de Datos con dplyr
+
+Crear un DataFrame simple:
+Simularemos un pequeño conjunto de datos con transacciones financieras.
+
+```{r}
+# Crear un DataFrame con datos de ejemplo
+transacciones <- data.frame(
+  Fecha = as.Date(c('2024-11-01', '2024-11-02', '2024-11-03')),
+  Descripcion = c('Alimentos', 'Renta', 'Restaurante'),
+  Monto = c(-1500, -7000, -800)
+)
+
+# Mostrar el DataFrame
+print(transacciones)
+
+```
+
+Filtrar y seleccionar datos:
+Aprenderemos a filtrar transacciones por monto.
+
+```{r}
+# Filtrar transacciones mayores a -1000 (gastos grandes)
+transacciones_filtradas <- transacciones %>%
+  filter(Monto < -1000)
+
+# Mostrar el resultado
+print(transacciones_filtradas)
+
+```
+
+Agregar nuevas columnas:
+Calcularemos una columna adicional con el gasto positivo.
+
+```{r}
+# Agregar una nueva columna "Monto_Absoluto"
+transacciones <- transacciones %>%
+  mutate(Monto_Absoluto = abs(Monto))
+
+# Mostrar el DataFrame modificado
+print(transacciones)
+
+```
+
+Agrupar y resumir datos:
+Sumaremos el total de gastos.
+
+```{r}
+# Resumir el total de gastos
+total_gastos <- transacciones %>%
+  summarise(Total_Gasto = sum(Monto))
+
+print(total_gastos)
+
+```
+
+Visualización de Datos con ggplot2
+Crear una gráfica de barras de gastos por categoría:
+
+```{r}
+# Agregar una categoría simple para cada gasto
+transacciones <- transacciones %>%
+  mutate(Categoria = c("Indispensable", "Estilo de vida", "Ahorro"))
+
+# Crear una gráfica de barras con ggplot2
+ggplot(transacciones, aes(x = Categoria, y = Monto_Absoluto, fill = Categoria)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Gastos por Categoría", x = "Categoría", y = "Monto (en pesos)") +
+  theme_minimal()
+
+```
+
+
+
+##Automatización de registro de gastos
+
+
+###Preparar los datos
+```{r}
+
+```
+
+
+###Codigo para crear gráficas
+```{r}
+# Instalar paquetes
+
+#install.packages(c("dplyr", "ggplot2", "RColorBrewer"))
+
+# Cargar librerías necesarias
+library(dplyr)
+library(ggplot2)
+
+# Leer archivo CSV con transacciones
+transacciones <- read.csv("Transacciones.csv")
+
+# Clasificar gastos automáticamente según palabras clave
+clasificar_gastos <- function(descripcion) {
+  if (grepl("supermercado|comida|renta", descripcion, ignore.case = TRUE)) {
+    return("Indispensable")
+  } else if (grepl("cine|ropa|suscripciones", descripcion, ignore.case = TRUE)) {
+    return("Estilo de vida")
+  } else if (grepl("ahorro|inversion", descripcion, ignore.case = TRUE)) {
+    return("Ahorro")
+  } else {
+    return("Otro")
+  }
+}
+
+# Aplicar clasificación
+transacciones <- transacciones %>%
+  mutate(Categoria = sapply(Descripcion, clasificar_gastos))
+
+# Filtrar solo los gastos (montos negativos) y convertirlos a positivos
+transacciones_gastos <- transacciones %>%
+  filter(Monto < 0) %>%
+  mutate(Monto = abs(Monto))
+
+# Resumen mensual por categoría y cálculo de porcentajes
+resumen <- transacciones_gastos %>%
+  group_by(Categoria) %>%
+  summarise(Total = sum(Monto)) %>%
+  mutate(Porcentaje = (Total / sum(Total)) * 100)
+
+# Imprimir resumen con porcentajes
+print(resumen)
+
+# Crear gráfica de dona
+ggplot(resumen, aes(x = "", y = Total, fill = Categoria)) +
+  geom_bar(stat = "identity", width = 1) +
+  coord_polar(theta = "y") +
+  theme_void() + # Elimina los ejes y fondo
+  geom_text(aes(label = paste0(round(Porcentaje, 1), "%")), 
+            position = position_stack(vjust = 0.5)) +
+  labs(title = "Distribución de Gastos por Categoría") +
+  scale_fill_brewer(palette = "Set3")
+
+```
+
+
